@@ -1,0 +1,50 @@
+services:
+  db:
+    image: mysql:8.1
+    container_name: uep-hiringsystem-db
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${MYSQL_DATABASE}
+      MYSQL_ROOT_HOST: '%'
+    ports:
+      - "3307:3306"
+    volumes:
+      - db_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h localhost -p$$MYSQL_ROOT_PASSWORD"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  backend:
+    image: zanaad/uep-hiringsystem-backend:latest
+    build:
+      context: ./backend
+    container_name: uep-hiringsystem-backend
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      APP_NAME: ${APP_NAME}
+      DEBUG: ${DEBUG}
+      DATABASE_URL: ${DATABASE_URL}
+    ports:
+      - "8000:8000"
+
+  frontend:
+    image: zanaad/uep-hiringsystem-frontend:latest
+    build:
+      context: ./frontend
+      args:
+        VITE_API_URL: ${VITE_API_URL}
+    container_name: uep-hiringsystem-frontend
+    restart: unless-stopped
+    depends_on:
+      - backend
+    ports:
+      - "3000:80"
+
+volumes:
+  db_data:
