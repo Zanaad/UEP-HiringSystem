@@ -12,27 +12,21 @@ HirePrep is a hiring platform with two user sides:
 
 ## Quick Start
 
-### Frontend
+### Docker Compose
 
 ```bash
-cd frontend
-npm install
-npm run dev
+cp .env.example .env
+docker compose up --build
 ```
 
-### Backend
+### Migrations
 
 ```bash
-cd backend
-python3 -m venv .venv
-source .venv/bin/activate
-pip install -r requirements.txt
-uvicorn app.main:app --reload
+docker compose exec backend alembic upgrade head
 ```
 
-### Backend Migrations
+### Services
 
-```bash
-cd backend
-alembic upgrade head
-```
+- Frontend: http://localhost:3000
+- Backend: http://localhost:8000
+- MySQL: localhost:3306
