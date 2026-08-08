@@ -1,6 +1,7 @@
 import { createBrowserRouter } from 'react-router-dom'
 import CandidateLayout from './layouts/CandidateLayout'
 import RecruiterLayout from './layouts/RecruiterLayout'
+import RoleGuard from './components/RoleGuard'
 import LoginPage from './pages/auth/LoginPage'
 import RegisterPage from './pages/auth/RegisterPage'
 import CandidateDashboardPage from './pages/candidate/DashboardPage'
@@ -19,23 +20,33 @@ export const router = createBrowserRouter([
   { path: '/login', element: <LoginPage /> },
   { path: '/register', element: <RegisterPage /> },
   {
-    path: '/recruiter',
-    element: <RecruiterLayout />,
+    element: <RoleGuard allowedRoles={['recruiter']} />,
     children: [
-      { index: true, element: <RecruiterDashboardPage /> },
-      { path: 'jobs', element: <RecruiterJobsPage /> },
-      { path: 'pipeline', element: <RecruiterPipelinePage /> },
-      { path: 'settings', element: <RecruiterSettingsPage /> },
+      {
+        path: 'recruiter',
+        element: <RecruiterLayout />,
+        children: [
+          { index: true, element: <RecruiterDashboardPage /> },
+          { path: 'jobs', element: <RecruiterJobsPage /> },
+          { path: 'pipeline', element: <RecruiterPipelinePage /> },
+          { path: 'settings', element: <RecruiterSettingsPage /> },
+        ],
+      },
     ],
   },
   {
-    path: '/candidate',
-    element: <CandidateLayout />,
+    element: <RoleGuard allowedRoles={['candidate']} />,
     children: [
-      { index: true, element: <CandidateDashboardPage /> },
-      { path: 'jobs', element: <CandidateJobsPage /> },
-      { path: 'mock-interviews', element: <MockInterviewsPage /> },
-      { path: 'settings', element: <CandidateSettingsPage /> },
+      {
+        path: 'candidate',
+        element: <CandidateLayout />,
+        children: [
+          { index: true, element: <CandidateDashboardPage /> },
+          { path: 'jobs', element: <CandidateJobsPage /> },
+          { path: 'mock-interviews', element: <MockInterviewsPage /> },
+          { path: 'settings', element: <CandidateSettingsPage /> },
+        ],
+      },
     ],
   },
   { path: '*', element: <NotFoundPage /> },
