@@ -14,4 +14,4 @@ def get_user(user_id: int, db: Session = Depends(get_db)) -> UserRead:
     user = service.get_user(user_id)
     if user is None:
         raise HTTPException(status_code=404, detail="User not found")
-    return UserRead(id=user.id, name=user.name, email=user.email)
+    return UserRead(id=user.id, name=user.name, email=user.email, role=user.role)
