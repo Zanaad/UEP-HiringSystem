@@ -29,7 +29,7 @@ export default function LoginPage() {
 
     try {
       const response = await authService.login({ email, password })
-      authService.saveToken(response.data.access_token)
+      authService.saveSession(response.data)
       navigate(response.data.user.role === 'recruiter' ? '/recruiter' : '/candidate')
     } catch (error) {
       if (error instanceof AxiosError && error.response?.data?.detail) {

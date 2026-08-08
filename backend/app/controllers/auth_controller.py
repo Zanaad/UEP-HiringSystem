@@ -2,7 +2,9 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
 from app.database.connection import get_db
-from app.schemas.user_schema import LoginRequest, TokenResponse, UserCreate
+from app.dependencies.auth import get_current_user
+from app.models.user import User
+from app.schemas.user_schema import LoginRequest, TokenResponse, UserCreate, UserRead
 from app.services.auth_service import AuthService
 
 router = APIRouter(prefix="/auth", tags=["auth"])
@@ -25,3 +27,13 @@ def login(payload: LoginRequest, db: Session = Depends(get_db)) -> TokenResponse
         return service.login(payload)
     except ValueError as exc:
         raise HTTPException(status_code=401, detail=str(exc)) from exc
+
+
+@router.get("/me", response_model=UserRead)
+def me(current_user: User = Depends(get_current_user)) -> UserRead:
+    return UserRead(
+        id=current_user.id,
+        name=current_user.name,
+        email=current_user.email,
+        role=current_user.role,
+    )

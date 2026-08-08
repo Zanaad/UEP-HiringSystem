@@ -71,3 +71,64 @@ def test_register_rejects_duplicate_email():
 
     assert first.status_code == 201
     assert second.status_code == 409
+
+
+def test_candidate_cannot_read_other_user():
+    client = TestClient(app)
+
+    candidate_register = client.post(
+        "/auth/register",
+        json={"name": "Candidate User", "email": "candidate@example.com", "password": "Secret123!", "role": "candidate"},
+    )
+    recruiter_register = client.post(
+        "/auth/register",
+        json={"name": "Recruiter User", "email": "recruiter@example.com", "password": "Secret123!", "role": "recruiter"},
+    )
+
+    assert candidate_register.status_code == 201
+    assert recruiter_register.status_code == 201
+
+    candidate_token = candidate_register.json()["access_token"]
+    recruiter_id = recruiter_register.json()["user"]["id"]
+
+    response = client.get(
+        f"/users/{recruiter_id}",
+        headers={"Authorization": f"Bearer {candidate_token}"},
+    )
+
+    assert response.status_code == 403
+
+
+def test_recruiter_can_read_other_user():
+    client = TestClient(app)
+
+    candidate_register = client.post(
+        "/auth/register",
+        json={"name": "Candidate User", "email": "candidate2@example.com", "password": "Secret123!", "role": "candidate"},
+    )
+    recruiter_register = client.post(
+        "/auth/register",
+        json={"name": "Recruiter User", "email": "recruiter2@example.com", "password": "Secret123!", "role": "recruiter"},
+    )
+
+    assert candidate_register.status_code == 201
+    assert recruiter_register.status_code == 201
+
+    recruiter_token = recruiter_register.json()["access_token"]
+    candidate_id = candidate_register.json()["user"]["id"]
+
+    response = client.get(
+        f"/users/{candidate_id}",
+        headers={"Authorization": f"Bearer {recruiter_token}"},
+    )
+
+    assert response.status_code == 200
+    assert response.json()["id"] == candidate_id
+
+
+def test_auth_me_requires_token():
+    client = TestClient(app)
+
+    response = client.get("/auth/me")
+
+    assert response.status_code == 401

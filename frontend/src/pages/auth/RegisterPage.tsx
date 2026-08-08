@@ -37,7 +37,7 @@ export default function RegisterPage() {
 
     try {
       const response = await authService.register({ name, email, password, role })
-      authService.saveToken(response.data.access_token)
+      authService.saveSession(response.data)
       navigate(response.data.user.role === 'recruiter' ? '/recruiter' : '/candidate')
     } catch (error) {
       if (error instanceof AxiosError && error.response?.data?.detail) {
