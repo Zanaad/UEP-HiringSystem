@@ -3,7 +3,7 @@ from typing import Any
 
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
-from jose import JWTError
+from jwt import PyJWTError
 from sqlalchemy.orm import Session
 
 from app.database.connection import get_db
@@ -27,7 +27,7 @@ def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(
         if user_id_raw is None:
             raise credentials_exception
         user_id = int(user_id_raw)
-    except (JWTError, ValueError, TypeError) as exc:
+    except (PyJWTError, ValueError, TypeError) as exc:
         raise credentials_exception from exc
 
     user = UserRepository(db).get_by_id(user_id)

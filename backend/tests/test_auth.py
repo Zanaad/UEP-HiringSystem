@@ -4,10 +4,11 @@ import pytest
 from fastapi.testclient import TestClient
 
 os.environ.setdefault("DATABASE_URL", "sqlite:///./test_auth.db")
+os.environ.setdefault("SECRET_KEY", "test-secret-key-that-is-at-least-32-chars")
 
-from app.main import app
 from app.database.base import Base
 from app.database.connection import engine
+from app.main import app
 
 
 @pytest.fixture(autouse=True)
@@ -38,6 +39,20 @@ def test_register_and_login_flow():
     assert payload["access_token"]
     assert payload["user"]["email"] == "alice@example.com"
     assert payload["user"]["role"] == "recruiter"
+
+
+def test_login_rejects_bad_credentials():
+    client = TestClient(app)
+    client.post(
+        "/auth/register",
+        json={"name": "Alice", "email": "alice5@example.com", "password": "Secret123!", "role": "candidate"},
+    )
+
+    wrong_password = client.post("/auth/login", json={"email": "alice5@example.com", "password": "Wrong123!"})
+    unknown_email = client.post("/auth/login", json={"email": "nobody@example.com", "password": "Secret123!"})
+
+    assert wrong_password.status_code == 401
+    assert unknown_email.status_code == 401
 
 
 def test_register_rejects_weak_password():
@@ -78,11 +93,21 @@ def test_candidate_cannot_read_other_user():
 
     candidate_register = client.post(
         "/auth/register",
-        json={"name": "Candidate User", "email": "candidate@example.com", "password": "Secret123!", "role": "candidate"},
+        json={
+            "name": "Candidate User",
+            "email": "candidate@example.com",
+            "password": "Secret123!",
+            "role": "candidate",
+        },
     )
     recruiter_register = client.post(
         "/auth/register",
-        json={"name": "Recruiter User", "email": "recruiter@example.com", "password": "Secret123!", "role": "recruiter"},
+        json={
+            "name": "Recruiter User",
+            "email": "recruiter@example.com",
+            "password": "Secret123!",
+            "role": "recruiter",
+        },
     )
 
     assert candidate_register.status_code == 201
@@ -104,11 +129,21 @@ def test_recruiter_can_read_other_user():
 
     candidate_register = client.post(
         "/auth/register",
-        json={"name": "Candidate User", "email": "candidate2@example.com", "password": "Secret123!", "role": "candidate"},
+        json={
+            "name": "Candidate User",
+            "email": "candidate2@example.com",
+            "password": "Secret123!",
+            "role": "candidate",
+        },
     )
     recruiter_register = client.post(
         "/auth/register",
-        json={"name": "Recruiter User", "email": "recruiter2@example.com", "password": "Secret123!", "role": "recruiter"},
+        json={
+            "name": "Recruiter User",
+            "email": "recruiter2@example.com",
+            "password": "Secret123!",
+            "role": "recruiter",
+        },
     )
 
     assert candidate_register.status_code == 201

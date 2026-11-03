@@ -1,1 +1,1 @@
-from app.controllers.auth_controller import router
+from app.controllers.auth_controller import router as router

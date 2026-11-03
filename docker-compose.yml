@@ -30,6 +30,7 @@ services:
       APP_NAME: ${APP_NAME}
       DEBUG: ${DEBUG}
       DATABASE_URL: ${DATABASE_URL}
+      SECRET_KEY: ${SECRET_KEY:?SECRET_KEY must be set in .env}
     ports:
       - "8000:8000"
 

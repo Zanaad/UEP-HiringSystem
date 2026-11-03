@@ -5,9 +5,8 @@ Revises: 0001_create_users
 Create Date: 2026-08-08 00:00:00
 """
 
-from alembic import op
 import sqlalchemy as sa
-
+from alembic import op
 
 revision = "0002_user_auth"
 down_revision = "0001_create_users"

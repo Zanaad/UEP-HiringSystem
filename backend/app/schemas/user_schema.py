@@ -1,7 +1,7 @@
 import re
-from pydantic import BaseModel, EmailStr, field_validator
 from typing import Literal
 
+from pydantic import BaseModel, EmailStr, field_validator
 
 RoleType = Literal["candidate", "recruiter"]
 
@@ -53,10 +53,9 @@ class LoginRequest(BaseModel):
     @field_validator("password")
     @classmethod
     def validate_password(cls, value: str) -> str:
-        password = value.strip()
-        if len(password) < 8 or len(password) > 128:
+        if len(value) < 8 or len(value) > 128:
             raise ValueError("Password must be at least 8 characters")
-        return password
+        return value
 
 
 class TokenResponse(BaseModel):

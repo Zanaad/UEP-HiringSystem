@@ -16,7 +16,17 @@ HirePrep is a hiring platform with two user sides:
 
 ```bash
 cp .env.example .env
+# set SECRET_KEY in .env (min 32 chars), e.g. with: openssl rand -hex 32
 docker compose up --build
+```
+
+### Backend checks
+
+```bash
+cd backend
+pip install -r requirements-dev.txt
+ruff check app tests migrations
+DATABASE_URL=sqlite:///./test.db SECRET_KEY=local-test-secret-key-at-least-32-chars pytest -q
 ```
 
 ### Migrations

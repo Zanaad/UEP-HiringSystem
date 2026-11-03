@@ -1,10 +1,15 @@
-from sqlalchemy.orm import Session
 from sqlalchemy.exc import IntegrityError
+from sqlalchemy.orm import Session
 
 from app.models.user import User
 from app.repositories.user_repository import UserRepository
-from app.schemas.user_schema import UserCreate, UserRead, LoginRequest, TokenResponse
-from app.services.auth_utils import create_access_token, get_password_hash, verify_password
+from app.schemas.user_schema import LoginRequest, TokenResponse, UserCreate, UserRead
+from app.services.auth_utils import (
+    DUMMY_PASSWORD_HASH,
+    create_access_token,
+    get_password_hash,
+    verify_password,
+)
 
 
 class AuthService:
@@ -36,7 +41,8 @@ class AuthService:
     def login(self, payload: LoginRequest) -> TokenResponse:
         normalized_email = str(payload.email).strip().lower()
         user = self.repository.get_by_email(normalized_email)
-        if user is None or not verify_password(payload.password, user.password_hash):
+        password_hash = user.password_hash if user else DUMMY_PASSWORD_HASH
+        if not verify_password(payload.password, password_hash) or user is None:
             raise ValueError("Invalid credentials")
         return self._build_token_response(user)
 

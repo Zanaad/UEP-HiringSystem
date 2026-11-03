@@ -8,7 +8,7 @@ class Settings(BaseSettings):
     app_name: str = "UEP Hiring System"
     debug: bool = True
     database_url: str = Field(...)
-    secret_key: str = Field(default="change-me-in-production")
+    secret_key: str = Field(..., min_length=32)
     algorithm: str = "HS256"
     access_token_expire_minutes: int = 30
 
