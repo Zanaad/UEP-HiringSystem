@@ -1,127 +1,125 @@
-import { useState } from 'react'
-import { Link } from 'react-router-dom'
-import { useNavigate } from 'react-router-dom'
-import { AxiosError } from 'axios'
+import { Link, Navigate } from 'react-router-dom'
+import { useForm, useWatch } from 'react-hook-form'
+import { zodResolver } from '@hookform/resolvers/zod'
+import { Button } from '../../components/ui/button'
+import { FormField } from '../../components/ui/form-field'
+import { Input } from '../../components/ui/input'
+import { Label } from '../../components/ui/label'
+import { cn } from '../../components/ui/utils'
+import AuthLayout from '../../layouts/AuthLayout'
+import { getApiErrorMessage } from '../../services/api'
 import { authService, type UserRole } from '../../services/auth.service'
-import { validateEmail, validateName, validatePassword } from '../../utils/authValidation'
+import { homePath, useAuthStore } from '../../stores/auth.store'
+import { registerSchema } from '../../utils/authValidation'
+
+const roles: { value: UserRole; title: string; description: string }[] = [
+  { value: 'recruiter', title: 'Hire Talent', description: "I'm a recruiter" },
+  { value: 'candidate', title: 'Find a Job', description: "I'm a candidate" },
+]
 
 export default function RegisterPage() {
-  const navigate = useNavigate()
-  const [name, setName] = useState('')
-  const [email, setEmail] = useState('')
-  const [password, setPassword] = useState('')
-  const [role, setRole] = useState<UserRole>('candidate')
-  const [error, setError] = useState('')
+  const user = useAuthStore((state) => state.user)
+  const setSession = useAuthStore((state) => state.setSession)
+  const {
+    register,
+    handleSubmit,
+    setError,
+    setValue,
+    control,
+    formState: { errors, isSubmitting },
+  } = useForm({
+    resolver: zodResolver(registerSchema),
+    defaultValues: { name: '', email: '', password: '', role: 'candidate' as UserRole },
+  })
+  const selectedRole = useWatch({ control, name: 'role' })
 
-  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
-    event.preventDefault()
-    setError('')
+  if (user) return <Navigate to={homePath(user.role)} replace />
 
-    const nameError = validateName(name)
-    if (nameError) {
-      setError(nameError)
-      return
-    }
-
-    const emailError = validateEmail(email)
-    if (emailError) {
-      setError(emailError)
-      return
-    }
-
-    const passwordError = validatePassword(password)
-    if (passwordError) {
-      setError(passwordError)
-      return
-    }
-
+  const onSubmit = handleSubmit(async (values) => {
     try {
-      const response = await authService.register({ name, email, password, role })
-      authService.saveSession(response.data)
-      navigate(response.data.user.role === 'recruiter' ? '/recruiter' : '/candidate')
+      setSession(await authService.register(values))
     } catch (error) {
-      if (error instanceof AxiosError && error.response?.data?.detail) {
-        setError(error.response.data.detail)
-        return
-      }
-      setError('Unable to create account')
+      setError('root', { message: getApiErrorMessage(error, 'Unable to create account.') })
     }
-  }
+  })
 
   return (
-    <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #eff6ff, #e0edff)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1.5rem' }}>
-      <div style={{ width: '100%', maxWidth: 460 }}>
-        <div style={{ textAlign: 'center', marginBottom: '1.5rem' }}>
-          <h1 style={{ fontSize: '2rem', margin: 0, color: '#111827' }}>HirePrep</h1>
-          <p style={{ color: '#4b5563' }}>Create your account and get started today.</p>
-        </div>
-
-        <div style={{ background: '#fff', border: '1px solid #e5e7eb', borderRadius: 16, padding: '2rem' }}>
-          <h2 style={{ marginTop: 0, marginBottom: '1rem' }}>Create account</h2>
-
-          <p style={{ marginTop: 0, color: '#374151' }}>I want to:</p>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem', marginBottom: '1rem' }}>
+    <AuthLayout
+      title="Create account"
+      subtitle="Create your account and get started today."
+      footer={
+        <>
+          Already have an account?{' '}
+          <Link to="/login" className="text-primary font-semibold hover:underline">
+            Log in
+          </Link>
+        </>
+      }
+    >
+      <div className="mb-6">
+        <Label className="mb-3 block">I want to:</Label>
+        <div className="grid grid-cols-2 gap-3">
+          {roles.map((role) => (
             <button
+              key={role.value}
               type="button"
-              onClick={() => setRole('recruiter')}
-              style={{
-                padding: '0.75rem',
-                borderRadius: 10,
-                border: role === 'recruiter' ? '2px solid #3182ce' : '1px solid #d1d5db',
-                background: role === 'recruiter' ? '#eff6ff' : '#fff',
-                fontWeight: 600,
-              }}
+              aria-pressed={selectedRole === role.value}
+              onClick={() => setValue('role', role.value)}
+              className={cn(
+                'rounded-xl border-2 p-4 text-left transition-all',
+                selectedRole === role.value ? 'border-primary bg-blue-50' : 'border-gray-200 hover:border-gray-300',
+              )}
             >
-              Hire Talent
+              <div className="font-semibold text-gray-900">{role.title}</div>
+              <div className="text-sm text-gray-600">{role.description}</div>
             </button>
-            <button
-              type="button"
-              onClick={() => setRole('candidate')}
-              style={{
-                padding: '0.75rem',
-                borderRadius: 10,
-                border: role === 'candidate' ? '2px solid #3182ce' : '1px solid #d1d5db',
-                background: role === 'candidate' ? '#eff6ff' : '#fff',
-                fontWeight: 600,
-              }}
-            >
-              Find a Job
-            </button>
-          </div>
-
-          <form onSubmit={handleSubmit} style={{ display: 'grid', gap: '1rem' }}>
-            <div style={{ display: 'grid', gap: '0.4rem' }}>
-              <label htmlFor="register-name" style={{ color: '#374151', fontWeight: 500 }}>Full Name</label>
-              <input id="register-name" value={name} onChange={(event) => setName(event.target.value)} placeholder="John Doe" autoComplete="name" required style={{ height: 44, padding: '0 0.75rem', border: '1px solid #d1d5db', borderRadius: 10 }} />
-            </div>
-            <div style={{ display: 'grid', gap: '0.4rem' }}>
-              <label htmlFor="register-email" style={{ color: '#374151', fontWeight: 500 }}>Work Email</label>
-              <input id="register-email" value={email} onChange={(event) => setEmail(event.target.value)} placeholder="you@company.com" type="email" autoComplete="email" required style={{ height: 44, padding: '0 0.75rem', border: '1px solid #d1d5db', borderRadius: 10 }} />
-            </div>
-            <div style={{ display: 'grid', gap: '0.4rem' }}>
-              <label htmlFor="register-password" style={{ color: '#374151', fontWeight: 500 }}>Password</label>
-              <input id="register-password" value={password} onChange={(event) => setPassword(event.target.value)} placeholder="••••••••" type="password" autoComplete="new-password" required style={{ height: 44, padding: '0 0.75rem', border: '1px solid #d1d5db', borderRadius: 10 }} />
-            </div>
-            <p style={{ color: '#6b7280', margin: 0, fontSize: '0.85rem' }}>
-              Password must be 8+ chars and include uppercase, lowercase, number, and special character.
-            </p>
-            <label htmlFor="terms" style={{ display: 'flex', alignItems: 'flex-start', gap: '0.5rem', color: '#4b5563', fontSize: '0.92rem' }}>
-              <input id="terms" type="checkbox" required style={{ marginTop: 2 }} />
-              <span>
-                I agree to the <a href="#" style={{ color: '#3182ce', textDecoration: 'none' }}>Terms of Service</a> and <a href="#" style={{ color: '#3182ce', textDecoration: 'none' }}>Privacy Policy</a>
-              </span>
-            </label>
-            {error ? <p style={{ color: 'crimson', margin: 0 }}>{error}</p> : null}
-            <button type="submit" style={{ height: 44, border: 0, borderRadius: 10, background: '#3182ce', color: '#fff', fontWeight: 600 }}>
-              Create account
-            </button>
-          </form>
-
-          <p style={{ marginTop: '1rem', textAlign: 'center', color: '#4b5563' }}>
-            Already have an account? <Link to="/login" style={{ color: '#3182ce', fontWeight: 600 }}>Log in</Link>
-          </p>
+          ))}
         </div>
       </div>
-    </div>
+
+      <form onSubmit={onSubmit} className="space-y-4" noValidate>
+        <FormField id="name" label="Full Name" error={errors.name?.message}>
+          <Input
+            id="name"
+            autoComplete="name"
+            placeholder="John Doe"
+            className="h-11"
+            aria-invalid={!!errors.name}
+            {...register('name')}
+          />
+        </FormField>
+        <FormField id="email" label={selectedRole === 'recruiter' ? 'Work Email' : 'Email'} error={errors.email?.message}>
+          <Input
+            id="email"
+            type="email"
+            autoComplete="email"
+            placeholder="you@company.com"
+            className="h-11"
+            aria-invalid={!!errors.email}
+            {...register('email')}
+          />
+        </FormField>
+        <FormField
+          id="password"
+          label="Password"
+          error={errors.password?.message}
+          hint="At least 8 characters, with uppercase, lowercase, a number and a special character."
+        >
+          <Input
+            id="password"
+            type="password"
+            autoComplete="new-password"
+            placeholder="••••••••"
+            className="h-11"
+            aria-invalid={!!errors.password}
+            {...register('password')}
+          />
+        </FormField>
+        {errors.root && <p className="text-destructive text-sm">{errors.root.message}</p>}
+        <Button type="submit" size="lg" className="w-full" disabled={isSubmitting}>
+          {isSubmitting ? 'Creating account…' : 'Create account'}
+        </Button>
+      </form>
+    </AuthLayout>
   )
 }

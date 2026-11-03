@@ -1,81 +1,81 @@
-import { useState } from 'react'
-import { Link } from 'react-router-dom'
-import { useNavigate } from 'react-router-dom'
-import { AxiosError } from 'axios'
+import { Link, Navigate, useLocation } from 'react-router-dom'
+import { useForm } from 'react-hook-form'
+import { zodResolver } from '@hookform/resolvers/zod'
+import { Button } from '../../components/ui/button'
+import { FormField } from '../../components/ui/form-field'
+import { Input } from '../../components/ui/input'
+import AuthLayout from '../../layouts/AuthLayout'
+import { getApiErrorMessage } from '../../services/api'
 import { authService } from '../../services/auth.service'
-import { validateEmail, validatePassword } from '../../utils/authValidation'
+import { homePath, useAuthStore } from '../../stores/auth.store'
+import { loginSchema } from '../../utils/authValidation'
 
 export default function LoginPage() {
-  const navigate = useNavigate()
-  const [email, setEmail] = useState('')
-  const [password, setPassword] = useState('')
-  const [error, setError] = useState('')
+  const location = useLocation()
+  const user = useAuthStore((state) => state.user)
+  const setSession = useAuthStore((state) => state.setSession)
+  const {
+    register,
+    handleSubmit,
+    setError,
+    formState: { errors, isSubmitting },
+  } = useForm({ resolver: zodResolver(loginSchema), defaultValues: { email: '', password: '' } })
 
-  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
-    event.preventDefault()
-    setError('')
-
-    const emailError = validateEmail(email)
-    if (emailError) {
-      setError(emailError)
-      return
-    }
-
-    const passwordError = validatePassword(password)
-    if (passwordError) {
-      setError(passwordError)
-      return
-    }
-
-    try {
-      const response = await authService.login({ email, password })
-      authService.saveSession(response.data)
-      navigate(response.data.user.role === 'recruiter' ? '/recruiter' : '/candidate')
-    } catch (error) {
-      if (error instanceof AxiosError && error.response?.data?.detail) {
-        setError(error.response.data.detail)
-        return
-      }
-      setError('Invalid email or password')
-    }
+  if (user) {
+    const from = (location.state as { from?: string } | null)?.from
+    const target = from?.startsWith(homePath(user.role)) ? from : homePath(user.role)
+    return <Navigate to={target} replace />
   }
 
-  return (
-    <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #eff6ff, #e0edff)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1.5rem' }}>
-      <div style={{ width: '100%', maxWidth: 420 }}>
-        <div style={{ textAlign: 'center', marginBottom: '1.5rem' }}>
-          <h1 style={{ fontSize: '2rem', margin: 0, color: '#111827' }}>HirePrep</h1>
-          <p style={{ color: '#4b5563' }}>Welcome back! Please login to your account.</p>
-        </div>
+  const onSubmit = handleSubmit(async (values) => {
+    try {
+      setSession(await authService.login(values))
+    } catch (error) {
+      setError('root', { message: getApiErrorMessage(error, 'Invalid email or password.') })
+    }
+  })
 
-        <div style={{ background: '#fff', border: '1px solid #e5e7eb', borderRadius: 16, padding: '2rem' }}>
-          <h2 style={{ marginTop: 0, marginBottom: '1rem' }}>Log in</h2>
-          <form onSubmit={handleSubmit} style={{ display: 'grid', gap: '1rem' }}>
-            <div style={{ display: 'grid', gap: '0.4rem' }}>
-              <label htmlFor="login-email" style={{ color: '#374151', fontWeight: 500 }}>Email</label>
-              <input id="login-email" value={email} onChange={(event) => setEmail(event.target.value)} placeholder="you@company.com" type="email" autoComplete="email" required style={{ height: 44, padding: '0 0.75rem', border: '1px solid #d1d5db', borderRadius: 10 }} />
-            </div>
-            <div style={{ display: 'grid', gap: '0.4rem' }}>
-              <label htmlFor="login-password" style={{ color: '#374151', fontWeight: 500 }}>Password</label>
-              <input id="login-password" value={password} onChange={(event) => setPassword(event.target.value)} placeholder="••••••••" type="password" autoComplete="current-password" required style={{ height: 44, padding: '0 0.75rem', border: '1px solid #d1d5db', borderRadius: 10 }} />
-            </div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.92rem' }}>
-              <label htmlFor="remember-me" style={{ display: 'flex', alignItems: 'center', gap: '0.45rem', color: '#4b5563' }}>
-                <input id="remember-me" type="checkbox" />
-                Remember me
-              </label>
-              <a href="#" style={{ color: '#3182ce', textDecoration: 'none' }}>Forgot password?</a>
-            </div>
-            {error ? <p style={{ color: 'crimson', margin: 0 }}>{error}</p> : null}
-            <button type="submit" style={{ height: 44, border: 0, borderRadius: 10, background: '#3182ce', color: '#fff', fontWeight: 600 }}>
-              Log in
-            </button>
-          </form>
-          <p style={{ marginTop: '1rem', textAlign: 'center', color: '#4b5563' }}>
-            Don't have an account? <Link to="/register" style={{ color: '#3182ce', fontWeight: 600 }}>Sign up</Link>
-          </p>
-        </div>
-      </div>
-    </div>
+  return (
+    <AuthLayout
+      title="Log in"
+      subtitle="Welcome back! Please log in to your account."
+      footer={
+        <>
+          Don't have an account?{' '}
+          <Link to="/register" className="text-primary font-semibold hover:underline">
+            Sign up
+          </Link>
+        </>
+      }
+    >
+      <form onSubmit={onSubmit} className="space-y-4" noValidate>
+        <FormField id="email" label="Email" error={errors.email?.message}>
+          <Input
+            id="email"
+            type="email"
+            autoComplete="email"
+            placeholder="you@company.com"
+            className="h-11"
+            aria-invalid={!!errors.email}
+            {...register('email')}
+          />
+        </FormField>
+        <FormField id="password" label="Password" error={errors.password?.message}>
+          <Input
+            id="password"
+            type="password"
+            autoComplete="current-password"
+            placeholder="••••••••"
+            className="h-11"
+            aria-invalid={!!errors.password}
+            {...register('password')}
+          />
+        </FormField>
+        {errors.root && <p className="text-destructive text-sm">{errors.root.message}</p>}
+        <Button type="submit" size="lg" className="w-full" disabled={isSubmitting}>
+          {isSubmitting ? 'Logging in…' : 'Log in'}
+        </Button>
+      </form>
+    </AuthLayout>
   )
 }

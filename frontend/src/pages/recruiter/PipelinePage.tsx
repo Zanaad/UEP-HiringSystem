@@ -1,3 +1,7 @@
 export default function RecruiterPipelinePage() {
-  return <h1>Recruiter Pipeline</h1>
+  return (
+    <div className="p-8">
+      <h1 className="text-3xl font-bold text-gray-900">Recruiter Pipeline</h1>
+    </div>
+  )
 }

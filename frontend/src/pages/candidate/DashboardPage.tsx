@@ -1,3 +1,7 @@
 export default function CandidateDashboardPage() {
-  return <h1>Candidate Dashboard</h1>
+  return (
+    <div className="p-8">
+      <h1 className="text-3xl font-bold text-gray-900">Candidate Dashboard</h1>
+    </div>
+  )
 }

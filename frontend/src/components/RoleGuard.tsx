@@ -1,20 +1,18 @@
-import { Navigate, Outlet } from 'react-router-dom'
-import { authService, type UserRole } from '../services/auth.service'
+import { Navigate, Outlet, useLocation } from 'react-router-dom'
+import type { UserRole } from '../services/auth.service'
+import { homePath, useAuthStore } from '../stores/auth.store'
 
-type RoleGuardProps = {
-  allowedRoles?: UserRole[]
-}
+export default function RoleGuard({ allowedRoles }: { allowedRoles: UserRole[] }) {
+  const token = useAuthStore((state) => state.token)
+  const user = useAuthStore((state) => state.user)
+  const location = useLocation()
 
-export default function RoleGuard({ allowedRoles }: RoleGuardProps) {
-  const token = authService.getToken()
-  const currentUser = authService.getCurrentUser()
-
-  if (!token || !currentUser) {
-    return <Navigate to="/login" replace />
+  if (!token || !user) {
+    return <Navigate to="/login" replace state={{ from: location.pathname }} />
   }
 
-  if (allowedRoles && !allowedRoles.includes(currentUser.role)) {
-    return <Navigate to={currentUser.role === 'recruiter' ? '/recruiter' : '/candidate'} replace />
+  if (!allowedRoles.includes(user.role)) {
+    return <Navigate to={homePath(user.role)} replace />
   }
 
   return <Outlet />

@@ -1,35 +1,28 @@
 import { createBrowserRouter } from 'react-router-dom'
-import CandidateLayout from './layouts/CandidateLayout'
-import RecruiterLayout from './layouts/RecruiterLayout'
 import RoleGuard from './components/RoleGuard'
-import LoginPage from './pages/auth/LoginPage'
-import RegisterPage from './pages/auth/RegisterPage'
-import CandidateDashboardPage from './pages/candidate/DashboardPage'
-import CandidateJobsPage from './pages/candidate/JobsPage'
-import MockInterviewsPage from './pages/candidate/MockInterviewsPage'
-import CandidateSettingsPage from './pages/candidate/SettingsPage'
-import RecruiterDashboardPage from './pages/recruiter/DashboardPage'
-import RecruiterJobsPage from './pages/recruiter/JobsPage'
-import RecruiterPipelinePage from './pages/recruiter/PipelinePage'
-import RecruiterSettingsPage from './pages/recruiter/SettingsPage'
+import AppLayout from './layouts/AppLayout'
 import LandingPage from './pages/shared/LandingPage'
-import NotFoundPage from './pages/shared/NotFoundPage'
+
+// Pages are code-split so each route only downloads what it needs.
+const page = (load: () => Promise<{ default: React.ComponentType }>) => async () => ({
+  Component: (await load()).default,
+})
 
 export const router = createBrowserRouter([
   { path: '/', element: <LandingPage /> },
-  { path: '/login', element: <LoginPage /> },
-  { path: '/register', element: <RegisterPage /> },
+  { path: '/login', lazy: page(() => import('./pages/auth/LoginPage')) },
+  { path: '/register', lazy: page(() => import('./pages/auth/RegisterPage')) },
   {
     element: <RoleGuard allowedRoles={['recruiter']} />,
     children: [
       {
         path: 'recruiter',
-        element: <RecruiterLayout />,
+        element: <AppLayout />,
         children: [
-          { index: true, element: <RecruiterDashboardPage /> },
-          { path: 'jobs', element: <RecruiterJobsPage /> },
-          { path: 'pipeline', element: <RecruiterPipelinePage /> },
-          { path: 'settings', element: <RecruiterSettingsPage /> },
+          { index: true, lazy: page(() => import('./pages/recruiter/DashboardPage')) },
+          { path: 'jobs', lazy: page(() => import('./pages/recruiter/JobsPage')) },
+          { path: 'pipeline', lazy: page(() => import('./pages/recruiter/PipelinePage')) },
+          { path: 'settings', lazy: page(() => import('./pages/recruiter/SettingsPage')) },
         ],
       },
     ],
@@ -39,15 +32,15 @@ export const router = createBrowserRouter([
     children: [
       {
         path: 'candidate',
-        element: <CandidateLayout />,
+        element: <AppLayout />,
         children: [
-          { index: true, element: <CandidateDashboardPage /> },
-          { path: 'jobs', element: <CandidateJobsPage /> },
-          { path: 'mock-interviews', element: <MockInterviewsPage /> },
-          { path: 'settings', element: <CandidateSettingsPage /> },
+          { index: true, lazy: page(() => import('./pages/candidate/DashboardPage')) },
+          { path: 'jobs', lazy: page(() => import('./pages/candidate/JobsPage')) },
+          { path: 'mock-interviews', lazy: page(() => import('./pages/candidate/MockInterviewsPage')) },
+          { path: 'settings', lazy: page(() => import('./pages/candidate/SettingsPage')) },
         ],
       },
     ],
   },
-  { path: '*', element: <NotFoundPage /> },
+  { path: '*', lazy: page(() => import('./pages/shared/NotFoundPage')) },
 ])
