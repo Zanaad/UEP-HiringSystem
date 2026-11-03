@@ -1,7 +1,7 @@
 import re
 from typing import Literal
 
-from pydantic import BaseModel, EmailStr, field_validator
+from pydantic import BaseModel, EmailStr, Field, field_validator, model_validator
 
 RoleType = Literal["candidate", "recruiter"]
 
@@ -14,6 +14,7 @@ class UserCreate(BaseModel):
     email: EmailStr
     password: str
     role: RoleType
+    company_name: str | None = Field(default=None, max_length=120)
 
     @field_validator("name")
     @classmethod
@@ -37,6 +38,17 @@ class UserCreate(BaseModel):
         if not PASSWORD_SPECIAL_PATTERN.search(value):
             raise ValueError("Password must include at least one special character")
         return value
+
+
+    @model_validator(mode="after")
+    def validate_company(self) -> "UserCreate":
+        if self.role == "candidate":
+            self.company_name = None
+        elif not self.company_name or len(self.company_name.strip()) < 2:
+            raise ValueError("Company name is required for recruiters")
+        else:
+            self.company_name = self.company_name.strip()
+        return self
 
 
 class UserRead(BaseModel):

@@ -7,7 +7,7 @@ from sqlalchemy import engine_from_config, pool
 
 from app.config.settings import settings
 from app.database.base import Base
-from app.models.user import User  # noqa: F401
+from app.models import company, job, user  # noqa: F401
 
 config = context.config
 

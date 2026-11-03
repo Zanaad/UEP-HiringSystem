@@ -1,22 +1,6 @@
-import os
-
-import pytest
 from fastapi.testclient import TestClient
 
-os.environ.setdefault("DATABASE_URL", "sqlite:///./test_auth.db")
-os.environ.setdefault("SECRET_KEY", "test-secret-key-that-is-at-least-32-chars")
-
-from app.database.base import Base
-from app.database.connection import engine
 from app.main import app
-
-
-@pytest.fixture(autouse=True)
-def clean_db():
-    Base.metadata.drop_all(bind=engine)
-    Base.metadata.create_all(bind=engine)
-    yield
-    Base.metadata.drop_all(bind=engine)
 
 
 def test_register_and_login_flow():
@@ -24,7 +8,13 @@ def test_register_and_login_flow():
 
     register_response = client.post(
         "/auth/register",
-        json={"name": "Alice", "email": "alice@example.com", "password": "Secret123!", "role": "recruiter"},
+        json={
+            "name": "Alice",
+            "email": "alice@example.com",
+            "password": "Secret123!",
+            "role": "recruiter",
+            "company_name": "Acme",
+        },
     )
     assert register_response.status_code == 201
     assert register_response.json()["user"]["role"] == "recruiter"
@@ -107,6 +97,7 @@ def test_candidate_cannot_read_other_user():
             "email": "recruiter@example.com",
             "password": "Secret123!",
             "role": "recruiter",
+            "company_name": "Acme",
         },
     )
 
@@ -143,6 +134,7 @@ def test_recruiter_can_read_other_user():
             "email": "recruiter2@example.com",
             "password": "Secret123!",
             "role": "recruiter",
+            "company_name": "Acme",
         },
     )
 
@@ -167,3 +159,14 @@ def test_auth_me_requires_token():
     response = client.get("/auth/me")
 
     assert response.status_code == 401
+
+
+def test_recruiter_registration_requires_company():
+    client = TestClient(app)
+
+    response = client.post(
+        "/auth/register",
+        json={"name": "Rita", "email": "rita@example.com", "password": "Secret123!", "role": "recruiter"},
+    )
+
+    assert response.status_code == 422

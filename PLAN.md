@@ -94,11 +94,11 @@ FastAPI  ── routes → controllers → services → repositories → SQLAlch
 New tables, one Alembic migration per phase:
 
 ```
-users                      (exists) id, name, email, password_hash, role
-  + created_at
+users                      (exists) id, name, email, password_hash, role, created_at,
+                           company_id FK NULL                     -- set for recruiters
 
-companies                  id, name, website, industry, size, location, created_at
-recruiter_profiles         user_id PK/FK, company_id FK, job_title
+companies                  (exists) id, name, created_at
+                           + website, industry, size, location    -- phase 5 settings
 
 candidate_profiles         user_id PK/FK, headline, phone, location,
                            linkedin_url, github_url, portfolio_url,
@@ -106,7 +106,7 @@ candidate_profiles         user_id PK/FK, headline, phone, location,
                            education_level ENUM(high-school,bachelor,master,phd),
                            resume_path, resume_original_name
 
-jobs                       id, company_id FK, created_by FK users,
+jobs                       (exists) id, company_id FK, created_by FK users,
                            title, department, location, employment_type
                              ENUM(full-time,part-time,contract,internship),
                            salary_range, description TEXT,
@@ -161,12 +161,10 @@ All endpoints except auth and the public job listing need a JWT. `R` means recru
 ### Jobs
 | Method | Path | Who |
 |---|---|---|
-| GET | `/jobs?q=&location=&type=&page=` | public/C (active jobs only) |
-| GET | `/jobs/{id}` | public/C |
-| GET | `/recruiter/jobs?status=` | R (own company's jobs, including drafts) |
-| POST | `/jobs` | R |
-| PATCH | `/jobs/{id}` | R (owner only) |
-| DELETE | `/jobs/{id}` | R (soft delete: sets status to `closed`) |
+| GET | `/jobs?q=&employment_type=&page=&page_size=` | public (active jobs only; `q` matches title, department, location and company) |
+| GET | `/recruiter/jobs` | R (own company's jobs, including drafts and closed jobs) |
+| POST | `/jobs` | R (created as `draft` or `active`) |
+| PATCH | `/jobs/{id}` | R (own company only, otherwise 404; also publishes, closes and reopens via `status`) |
 
 ### Applications and pipeline
 | Method | Path | Who |
@@ -277,11 +275,12 @@ Each phase ends in something that can be demoed and merged as its own PR.
 - [x] Lazy-load each page so a route only downloads its own code
 
 ### Phase 2: Job management (2–3 days)
-- [ ] Backend: `companies`, `recruiter_profiles` and `jobs` models and migration, plus repository, service and controller
-- [ ] Ownership checks so a recruiter can only edit their own company's jobs
-- [ ] Tests: create, edit, list and close a job. A candidate gets 403. Another recruiter gets 403.
-- [ ] Frontend: port `JobManagement.tsx` using React Query and react-hook-form with zod. Add fields for required skills, minimum experience and education.
-- [ ] Frontend: port `JobSearch.tsx` (the candidate job list with search and filters)
+- [x] Backend: `companies` and `jobs` models and migration `0004`, plus repository, service and controller. Recruiters link to a company with `users.company_id` instead of a separate `recruiter_profiles` table.
+- [x] Recruiters enter a company name when they register
+- [x] Ownership checks: a recruiter can only see and edit their own company's jobs. Other jobs return 404, so their existence isn't revealed.
+- [x] Tests: the job lifecycle and who can see each job, another company's recruiter, rejecting nulls on update, search, filters and pagination
+- [x] Frontend: port `JobManagement.tsx` with React Query and react-hook-form with zod, plus fields for required skills, minimum experience and education. Publish, close and reopen buttons replace the Figma dropdown menu.
+- [x] Frontend: port `JobSearch.tsx` with server-side search (debounced), a type filter and pagination. Apply, ATS match and applicant counts arrive in Phase 3.
 
 ### Phase 3: Applications and pipeline (3–4 days)
 - [ ] Backend: `candidate_profiles`, `applications`, `application_events` and `application_notes`

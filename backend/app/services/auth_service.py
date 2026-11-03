@@ -1,6 +1,7 @@
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
+from app.models.company import Company
 from app.models.user import User
 from app.repositories.user_repository import UserRepository
 from app.schemas.user_schema import LoginRequest, TokenResponse, UserCreate, UserRead
@@ -29,6 +30,8 @@ class AuthService:
             password_hash=get_password_hash(payload.password),
             role=payload.role,
         )
+        if payload.company_name:
+            user.company = Company(name=payload.company_name)
         try:
             self.db.add(user)
             self.db.commit()
