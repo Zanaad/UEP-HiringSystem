@@ -267,13 +267,14 @@ Each phase ends in something that can be demoed and merged as its own PR.
 - [ ] Remove the stray `/test` file at the repo root (added in #7) if it isn't needed
 
 ### Phase 1: Port the design system and layouts (2–3 days)
-- [ ] Wire up Tailwind v4 (`@tailwindcss/vite`). Copy `theme.css`, `fonts.css` and `tailwind.css` from the Figma export.
-- [ ] Copy `components/ui/*` (shadcn) into `frontend/src/components/ui`, but only the components that are used. Add the matching `@radix-ui/*`, `lucide-react`, `clsx`, `tailwind-merge`, `class-variance-authority` and `sonner`.
-- [ ] Skip MUI, react-slick, masonry and the other unused Figma dependencies
-- [ ] Port `RecruiterLayout` and `CandidateLayout` (sidebar), keeping the existing `RoleGuard`
-- [ ] Port `LandingPage`, `Login` and `Register`, keeping the existing auth service and validation logic
-- [ ] Add a React Query `QueryClientProvider`, plus an axios 401 interceptor that logs the user out
-- [ ] Add a small Zustand `authStore` instead of reading `localStorage` directly in components
+- [x] Wire up Tailwind v4 (`@tailwindcss/vite`). The Figma theme lives in `styles/globals.css`, with `--primary` set to the blue the pages actually use.
+- [x] Port only the shadcn components in use so far (`button`, `input`, `label`, `card`), plus a `FormField` helper. Later phases add more as needed.
+- [x] Skip MUI, react-slick, masonry and the other unused Figma dependencies
+- [x] Merge the two sidebar layouts into one `AppLayout` (navigation chosen by role, with a mobile menu), keeping `RoleGuard`
+- [x] Port `LandingPage` (fake testimonials, pricing and unsupported claims removed), `Login` and `Register`, using react-hook-form and zod
+- [x] Add a React Query `QueryClientProvider` (cache cleared on logout), plus an axios 401 interceptor that logs the user out
+- [x] Add a Zustand `useAuthStore` (persisted) instead of reading `localStorage` directly in components
+- [x] Lazy-load each page so a route only downloads its own code
 
 ### Phase 2: Job management (2–3 days)
 - [ ] Backend: `companies`, `recruiter_profiles` and `jobs` models and migration, plus repository, service and controller

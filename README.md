@@ -31,6 +31,8 @@ DATABASE_URL=sqlite:///./test.db SECRET_KEY=local-test-secret-key-at-least-32-ch
 
 ### Migrations
 
+The backend container applies pending migrations automatically on startup. To run them manually:
+
 ```bash
 docker compose exec backend alembic upgrade head
 ```
@@ -38,5 +40,5 @@ docker compose exec backend alembic upgrade head
 ### Services
 
 - Frontend: http://localhost:3000
-- Backend: http://localhost:8000
-- MySQL: localhost:3306
+- Backend: http://localhost:8001
+- MySQL: localhost:3307
