@@ -23,6 +23,7 @@ interface LoginPayload {
 interface RegisterPayload extends LoginPayload {
   name: string
   role: UserRole
+  company_name?: string
 }
 
 export const authService = {

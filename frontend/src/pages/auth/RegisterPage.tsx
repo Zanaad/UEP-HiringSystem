@@ -29,7 +29,7 @@ export default function RegisterPage() {
     formState: { errors, isSubmitting },
   } = useForm({
     resolver: zodResolver(registerSchema),
-    defaultValues: { name: '', email: '', password: '', role: 'candidate' as UserRole },
+    defaultValues: { name: '', email: '', password: '', role: 'candidate' as UserRole, company_name: '' },
   })
   const selectedRole = useWatch({ control, name: 'role' })
 
@@ -37,7 +37,8 @@ export default function RegisterPage() {
 
   const onSubmit = handleSubmit(async (values) => {
     try {
-      setSession(await authService.register(values))
+      const { company_name, ...rest } = values
+      setSession(await authService.register(rest.role === 'recruiter' ? { ...rest, company_name } : rest))
     } catch (error) {
       setError('root', { message: getApiErrorMessage(error, 'Unable to create account.') })
     }
@@ -99,6 +100,18 @@ export default function RegisterPage() {
             {...register('email')}
           />
         </FormField>
+        {selectedRole === 'recruiter' && (
+          <FormField id="company_name" label="Company Name" error={errors.company_name?.message}>
+            <Input
+              id="company_name"
+              autoComplete="organization"
+              placeholder="Acme Inc."
+              className="h-11"
+              aria-invalid={!!errors.company_name}
+              {...register('company_name')}
+            />
+          </FormField>
+        )}
         <FormField
           id="password"
           label="Password"
