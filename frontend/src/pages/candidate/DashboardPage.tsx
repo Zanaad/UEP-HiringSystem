@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
-import { Award, Briefcase, Building2, CheckCircle2, ChevronRight, Clock, MapPin, Play, Search, TrendingUp, Users } from 'lucide-react'
+import { Briefcase, Building2, CheckCircle2, ChevronRight, Clock, MapPin, Play, Search, Target, TrendingUp, Users } from 'lucide-react'
 import { MatchBadge, SkillChips } from '../../components/Ats'
 import { Badge } from '../../components/ui/badge'
 import { Button } from '../../components/ui/button'
@@ -16,7 +16,7 @@ import {
   type MyApplication,
   type StageEvent,
 } from '../../services/applications.service'
-import { useStartInterview } from '../../services/interviews.service'
+import { interviewsService, useStartInterview } from '../../services/interviews.service'
 import { EMPLOYMENT_TYPES, formatDate } from '../../services/jobs.service'
 import { useAuthStore } from '../../stores/auth.store'
 
@@ -32,37 +32,41 @@ export default function CandidateDashboardPage() {
     queryFn: applicationsService.mine,
   })
 
+  const { data: sessions } = useQuery({ queryKey: ['mock-interviews'], queryFn: interviewsService.list })
+
   const stats = useMemo(() => {
     const list = applications ?? []
-    const active = list.filter((app) => app.stage !== 'hired' && app.stage !== 'rejected')
+    const scored = (sessions ?? []).filter((session) => session.overall_score !== null)
     return [
-      { title: 'Active Applications', value: active.length, icon: Briefcase, color: 'bg-blue-100 text-blue-600' },
+      {
+        title: 'Active Applications',
+        value: list.filter((app) => app.stage !== 'hired' && app.stage !== 'rejected').length,
+        icon: Briefcase,
+        color: 'bg-blue-100 text-blue-600',
+      },
       {
         title: 'In Interviews',
         value: list.filter((app) => app.stage === 'interview' || app.stage === 'technical').length,
         icon: Users,
         color: 'bg-indigo-100 text-indigo-600',
       },
+      { title: 'Mock Interviews', value: sessions?.length ?? 0, icon: Target, color: 'bg-green-100 text-green-600' },
       {
-        title: 'Offers',
-        value: list.filter((app) => app.stage === 'offer' || app.stage === 'hired').length,
-        icon: Award,
-        color: 'bg-green-100 text-green-600',
-      },
-      {
-        title: 'Average Match',
-        value: list.length ? `${Math.round(list.reduce((sum, app) => sum + app.ats.overall, 0) / list.length)}%` : '–',
+        title: 'Average Mock Score',
+        value: scored.length
+          ? `${Math.round(scored.reduce((sum, session) => sum + session.overall_score!, 0) / scored.length)}%`
+          : '–',
         icon: TrendingUp,
         color: 'bg-orange-100 text-orange-600',
       },
     ]
-  }, [applications])
+  }, [applications, sessions])
 
   return (
     <div className="p-4 md:p-8">
       <div className="mb-8">
         <h1 className="mb-2 text-3xl font-bold text-gray-900">Welcome back, {name.split(' ')[0]}!</h1>
-        <p className="text-gray-600">Track your applications and see where you stand.</p>
+        <p className="text-gray-600">Track your applications and continue your interview preparation.</p>
       </div>
 
       <div className="mb-8 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">

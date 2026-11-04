@@ -61,8 +61,26 @@ export const EDUCATION_LEVELS: Record<EducationLevel, string> = {
   phd: 'PhD',
 }
 
+// The API sends UTC timestamps without a zone suffix.
+export const parseServerDate = (iso: string) => new Date(/[zZ]|[+-]\d\d:\d\d$/.test(iso) ? iso : `${iso}Z`)
+
 export const formatDate = (iso: string) =>
-  new Date(iso).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })
+  parseServerDate(iso).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })
+
+const relative = new Intl.RelativeTimeFormat('en', { numeric: 'auto' })
+
+export function timeAgo(iso: string) {
+  const seconds = Math.round((parseServerDate(iso).getTime() - Date.now()) / 1000)
+  const units: [Intl.RelativeTimeFormatUnit, number][] = [
+    ['day', 86400],
+    ['hour', 3600],
+    ['minute', 60],
+  ]
+  for (const [unit, size] of units) {
+    if (Math.abs(seconds) >= size) return relative.format(Math.round(seconds / size), unit)
+  }
+  return 'just now'
+}
 
 export const jobsService = {
   search: (params: JobSearchParams) => api.get<JobPage>('/jobs', { params }).then((res) => res.data),

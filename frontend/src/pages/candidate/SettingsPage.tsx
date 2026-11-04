@@ -5,6 +5,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { z } from 'zod'
 import { toast } from 'sonner'
 import { Download, FileText, Upload } from 'lucide-react'
+import { AccountCard, PasswordCard } from '../../components/SettingsCards'
 import { Button } from '../../components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card'
 import { FormField } from '../../components/ui/form-field'
@@ -45,9 +46,12 @@ export default function CandidateSettingsPage() {
     <div className="max-w-4xl p-4 md:p-8">
       <div className="mb-8">
         <h1 className="mb-2 text-3xl font-bold text-gray-900">Settings</h1>
-        <p className="text-gray-600">Your profile is used to calculate how well you match each job.</p>
+        <p className="text-gray-600">Manage your account, resume and the profile used to match you with jobs.</p>
       </div>
 
+      <div className="mb-6">
+        <AccountCard />
+      </div>
       {isPending && <p className="py-16 text-center text-gray-500">Loading profile…</p>}
       {isError && (
         <div className="py-16 text-center">
@@ -63,6 +67,9 @@ export default function CandidateSettingsPage() {
           <ProfileForm profile={profile} />
         </div>
       )}
+      <div className="mt-6">
+        <PasswordCard />
+      </div>
     </div>
   )
 }

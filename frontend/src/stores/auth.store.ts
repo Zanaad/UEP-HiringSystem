@@ -6,6 +6,7 @@ interface AuthState {
   token: string | null
   user: AuthUser | null
   setSession: (session: AuthResponse) => void
+  updateUser: (user: AuthUser) => void
   logout: () => void
 }
 
@@ -15,6 +16,7 @@ export const useAuthStore = create<AuthState>()(
       token: null,
       user: null,
       setSession: ({ access_token, user }) => set({ token: access_token, user }),
+      updateUser: (user) => set({ user }),
       logout: () => set({ token: null, user: null }),
     }),
     { name: 'hireprep-auth' },
