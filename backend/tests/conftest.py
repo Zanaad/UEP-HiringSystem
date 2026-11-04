@@ -12,12 +12,13 @@ if str(ROOT) not in sys.path:
 
 os.environ.setdefault("DATABASE_URL", "sqlite:///./test.db")
 os.environ.setdefault("SECRET_KEY", "test-secret-key-that-is-at-least-32-chars")
+os.environ.setdefault("LLM_PROVIDER", "fake")
 os.environ.setdefault("UPLOAD_DIR", tempfile.mkdtemp(prefix="hireprep-test-uploads-"))
 
 from app.database.base import Base  # noqa: E402
 from app.database.connection import engine  # noqa: E402
 from app.main import app  # noqa: E402
-from app.models import application, candidate_profile, company, job, user  # noqa: E402, F401
+from app.models import application, candidate_profile, company, job, mock_interview, user  # noqa: E402, F401
 
 
 @pytest.fixture(autouse=True)

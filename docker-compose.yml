@@ -33,6 +33,10 @@ services:
       DATABASE_URL: ${DATABASE_URL}
       SECRET_KEY: ${SECRET_KEY:?SECRET_KEY must be set in .env}
       UPLOAD_DIR: /app/uploads
+      LLM_PROVIDER: ${LLM_PROVIDER:-gemini}
+      LLM_API_KEY: ${LLM_API_KEY:-}
+      LLM_MODEL: ${LLM_MODEL:-gemini-2.5-flash}
+      LLM_BASE_URL: ${LLM_BASE_URL:-}
     ports:
       - "8001:8000"
     volumes:

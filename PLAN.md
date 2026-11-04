@@ -129,15 +129,14 @@ scheduled_interviews       id, application_id FK, type ENUM(phone,video,onsite,t
                            scheduled_at DATETIME, interviewer_name, notes,
                            status ENUM(scheduled,completed,cancelled)       -- phase 6
 
-mock_interview_sessions    id, candidate_id FK, job_id FK NULL, track VARCHAR NULL,
+mock_interview_sessions    (exists) id, candidate_id FK, job_id FK NULL, track NULL, title,
                            status ENUM(in_progress,completed), overall_score NULL,
-                           llm_provider, llm_model, created_at, completed_at
+                           llm_provider ('fallback' when the question bank was used), llm_model,
+                           created_at, completed_at
 
-mock_interview_questions   id, session_id FK, position, category, question TEXT, tip TEXT
-
-mock_interview_answers     id, question_id FK UNIQUE, answer TEXT, score INT,
-                           strengths JSON, improvements JSON, suggestion TEXT,
-                           created_at
+mock_interview_questions   (exists) id, session_id FK, position, category, question TEXT, tip TEXT,
+                           answer TEXT NULL, score INT NULL, strengths JSON, improvements JSON,
+                           suggestion TEXT, answered_at       -- answer and feedback stored on the question (1:1)
 ```
 
 A mock interview is tied either to a **job** (`job_id`, as in the design document flow) or to a generic **track** such as "Behavioral" or "System Design" (as in the Figma practice cards).
@@ -182,11 +181,11 @@ When a signed-in candidate calls `GET /jobs`, each result also includes their `m
 ### Mock interviews
 | Method | Path | Who |
 |---|---|---|
-| POST | `/mock-interviews/start` `{job_id? , track?, num_questions?}` | C |
-| GET | `/mock-interviews` | C (history) |
-| GET | `/mock-interviews/{id}` | C (session, questions and answers) |
-| POST | `/mock-interviews/{id}/answers` `{question_id, answer}` | C (returns feedback) |
-| POST | `/mock-interviews/{id}/complete` | C (computes the overall score and summary) |
+| POST | `/mock-interviews` `{job_id \| track, num_questions 3-8}` | C (job must be active or one the candidate applied to; daily limit → 429) |
+| GET | `/mock-interviews` | C (history with answered/total counts) |
+| GET | `/mock-interviews/{id}` | C (own sessions only, otherwise 404) |
+| POST | `/mock-interviews/{id}/answers` `{question_id, answer}` | C (re-answering allowed while in progress; returns feedback, or `score: null` if AI is unavailable) |
+| POST | `/mock-interviews/{id}/complete` | C (overall score = average of scored answers) |
 
 ### Dashboards
 | Method | Path | Who |
@@ -295,13 +294,13 @@ Each phase ends in something that can be demoed and merged as its own PR.
 - [x] Frontend: port `CandidateDashboard.tsx` (stats, my applications with progress, detail dialog with activity)
 
 ### Phase 4: AI mock interviews (3–4 days)
-- [ ] `backend/app/ai/`: provider protocol, `GeminiProvider`, `FakeProvider`, prompts and Pydantic output schemas
-- [ ] Mock interview models and migration, service and controller
-- [ ] Static fallback question bank, built from the Figma `MockInterview.tsx` data
-- [ ] Daily rate limit for each candidate
-- [ ] Tests that use `FakeProvider`: start a session, answer, complete, check the rate limit, and check that provider failure falls back correctly
-- [ ] Frontend: port `MockInterview.tsx` with a loading state while the AI evaluates, and a session history list on the candidate dashboard
-- [ ] An optional "Practice for this job" button on job cards and application details
+- [x] `app/services/llm_service.py`: one OpenAI-compatible client covers Gemini, Groq and Ollama (only the base URL, key and model differ), plus `FakeProvider`, prompts, and Pydantic output validation with clamping and one retry
+- [x] Mock interview models and migration `0006`, repository, service and controller
+- [x] Static fallback question bank, built from the Figma `MockInterview.tsx` data, used when there's no key or the provider fails
+- [x] Daily limits per candidate (`mock_interview_daily_sessions`, `mock_interview_daily_answers`) to protect the free quota
+- [x] Tests: session flow and ownership, job access, fallback (no provider and failing provider), daily limits, and provider parsing, clamping and retry with mocked HTTP
+- [x] Frontend: Mock Interviews hub (job sessions, 4 practice tracks, history) and the session page ported from `MockInterview.tsx` (feedback, revise, retry when feedback failed, finish)
+- [x] "Prepare" button on each active application on the candidate dashboard
 
 ### Phase 5: Dashboards and settings (2 days)
 - [ ] `/recruiter/stats` and `/candidate/stats`, computed with SQL aggregates
