@@ -1,6 +1,7 @@
 import json
 import logging
 import re
+import time
 from typing import Protocol
 
 import httpx
@@ -86,12 +87,15 @@ def _parse_json(content: str) -> dict:
 
 
 class OpenAICompatibleProvider:
-    def __init__(self, name: str, base_url: str, api_key: str, model: str, timeout: float) -> None:
+    def __init__(
+        self, name: str, base_url: str, api_key: str, model: str, timeout: float, reasoning_effort: str = ""
+    ) -> None:
         self.name = name
         self.model = model
         self._url = f"{base_url.rstrip('/')}/chat/completions"
         self._headers = {"Authorization": f"Bearer {api_key}"} if api_key else {}
         self._timeout = timeout
+        self._reasoning_effort = reasoning_effort
 
     def generate_questions(self, context: str, count: int) -> list[GeneratedQuestion]:
         prompt = (
@@ -127,8 +131,12 @@ class OpenAICompatibleProvider:
             "response_format": {"type": "json_object"},
             "temperature": 0.4,
         }
+        if self._reasoning_effort:
+            payload["reasoning_effort"] = self._reasoning_effort
         error: Exception | None = None
-        for _ in range(2):
+        for attempt in range(2):
+            if attempt:
+                time.sleep(1)
             try:
                 response = httpx.post(self._url, json=payload, headers=self._headers, timeout=self._timeout)
                 response.raise_for_status()
@@ -173,4 +181,5 @@ def get_provider() -> LLMProvider | None:
         settings.llm_api_key,
         settings.llm_model,
         settings.llm_timeout_seconds,
+        settings.llm_reasoning_effort,
     )

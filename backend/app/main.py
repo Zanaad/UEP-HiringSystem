@@ -3,11 +3,13 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
 from app.exceptions import ConflictError, NotFoundError, RateLimitError
+from app.routes.account_routes import router as account_router
 from app.routes.application_routes import router as application_router
 from app.routes.auth_routes import router as auth_router
 from app.routes.job_routes import router as job_router
 from app.routes.mock_interview_routes import router as mock_interview_router
 from app.routes.profile_routes import router as profile_router
+from app.routes.stats_routes import router as stats_router
 from app.routes.user_routes import router as user_router
 
 app = FastAPI(title="UEP Hiring System API")
@@ -47,6 +49,8 @@ app.include_router(job_router)
 app.include_router(profile_router)
 app.include_router(application_router)
 app.include_router(mock_interview_router)
+app.include_router(account_router)
+app.include_router(stats_router)
 
 
 @app.get("/")

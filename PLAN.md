@@ -97,8 +97,7 @@ New tables, one Alembic migration per phase:
 users                      (exists) id, name, email, password_hash, role, created_at,
                            company_id FK NULL                     -- set for recruiters
 
-companies                  (exists) id, name, created_at
-                           + website, industry, size, location    -- phase 5 settings
+companies                  (exists) id, name, website, industry, size, location, created_at
 
 candidate_profiles         (exists) user_id PK/FK, headline, phone, location,
                            linkedin_url, github_url, portfolio_url,
@@ -152,10 +151,11 @@ All endpoints except auth and the public job listing need a JWT. `R` means recru
 |---|---|---|
 | POST | `/auth/register`, `/auth/login` | public (exists) |
 | GET | `/auth/me` | any (exists) |
-| POST | `/auth/change-password` | any |
+| PATCH | `/me/account` `{name}` | any |
+| POST | `/me/password` `{current_password, new_password}` | any (400 if the current password is wrong) |
 | GET/PUT | `/me/profile` | C (candidate profile; saving re-scores the candidate's applications) |
 | PUT/GET | `/me/resume` | C (upload: PDF/DOCX, max 5 MB, checked by file signature; download own file) |
-| GET/PUT | `/me/company` | R |
+| GET/PUT | `/me/company` | R (name, website, industry, size, location) |
 
 ### Jobs
 | Method | Path | Who |
@@ -190,8 +190,9 @@ When a signed-in candidate calls `GET /jobs`, each result also includes their `m
 ### Dashboards
 | Method | Path | Who |
 |---|---|---|
-| GET | `/recruiter/stats` | R (active jobs, applicants per stage, applications over time) |
-| GET | `/candidate/stats` | C (applications by stage, mock interview average score) |
+| GET | `/recruiter/stats` | R (KPIs, a funnel of how many candidates reached each stage, a 6-month trend, recent activity, top matches awaiting review; 9 queries regardless of data size) |
+
+The candidate dashboard uses `/applications/mine` and `/mock-interviews`, so it needs no stats endpoint.
 
 ---
 
@@ -303,9 +304,11 @@ Each phase ends in something that can be demoed and merged as its own PR.
 - [x] "Prepare" button on each active application on the candidate dashboard
 
 ### Phase 5: Dashboards and settings (2 days)
-- [ ] `/recruiter/stats` and `/candidate/stats`, computed with SQL aggregates
-- [ ] Port `RecruiterDashboard.tsx` (recharts) and wire it to the stats
-- [ ] Port `Settings.tsx`, keeping only the profile, resume, company info and change-password tabs. Hide billing, 2FA and notification settings, or show them as "coming soon".
+- [x] `/recruiter/stats` with SQL aggregates; the funnel counts each candidate at every stage up to the furthest one they reached
+- [x] Recruiter dashboard: KPIs, funnel and a 6-month trend as lightweight CSS charts instead of `recharts` (hover and focus tooltips, a table view, and separate applications/hires charts rather than two y-axes), plus top matches and recent activity
+- [x] Settings for both roles: account name, change password, and company information for recruiters (migration `0007`). Billing, 2FA and notifications are left out.
+- [x] Candidate dashboard: mock interview count and average score
+- [x] Default AI model is now `gemini-3.1-flash-lite` (`gemini-2.5-flash` is closed to new API keys), with optional `LLM_REASONING_EFFORT`
 
 ### Phase 6: Nice to have (if time allows)
 - [ ] Scheduled interviews on the candidate profile ("Schedule Interview" dialog)

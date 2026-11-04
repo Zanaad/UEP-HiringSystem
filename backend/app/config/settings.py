@@ -17,8 +17,9 @@ class Settings(BaseSettings):
 
     llm_provider: Literal["gemini", "groq", "ollama", "fake"] = "gemini"
     llm_api_key: str = ""
-    llm_model: str = "gemini-2.5-flash"
+    llm_model: str = "gemini-3.1-flash-lite"
     llm_base_url: str = ""
+    llm_reasoning_effort: Literal["", "none", "low", "medium", "high"] = ""
     llm_timeout_seconds: float = 30
     mock_interview_daily_sessions: int = 5
     mock_interview_daily_answers: int = 50
