@@ -39,6 +39,7 @@ export const router = createBrowserRouter([
           { index: true, lazy: page(() => import('./pages/candidate/DashboardPage')) },
           { path: 'jobs', lazy: page(() => import('./pages/candidate/JobsPage')) },
           { path: 'mock-interviews', lazy: page(() => import('./pages/candidate/MockInterviewsPage')) },
+          { path: 'mock-interviews/:id', lazy: page(() => import('./pages/candidate/MockInterviewPage')) },
           { path: 'settings', lazy: page(() => import('./pages/candidate/SettingsPage')) },
         ],
       },

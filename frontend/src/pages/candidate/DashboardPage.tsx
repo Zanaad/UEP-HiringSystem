@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
-import { Award, Briefcase, Building2, CheckCircle2, ChevronRight, Clock, MapPin, Search, TrendingUp, Users } from 'lucide-react'
+import { Award, Briefcase, Building2, CheckCircle2, ChevronRight, Clock, MapPin, Play, Search, TrendingUp, Users } from 'lucide-react'
 import { MatchBadge, SkillChips } from '../../components/Ats'
 import { Badge } from '../../components/ui/badge'
 import { Button } from '../../components/ui/button'
@@ -16,6 +16,7 @@ import {
   type MyApplication,
   type StageEvent,
 } from '../../services/applications.service'
+import { useStartInterview } from '../../services/interviews.service'
 import { EMPLOYMENT_TYPES, formatDate } from '../../services/jobs.service'
 import { useAuthStore } from '../../stores/auth.store'
 
@@ -25,6 +26,7 @@ const describeEvent = (event: StageEvent) =>
 export default function CandidateDashboardPage() {
   const name = useAuthStore((state) => state.user?.name ?? '')
   const [detail, setDetail] = useState<MyApplication | null>(null)
+  const prepare = useStartInterview()
   const { data: applications, isPending, isError, refetch } = useQuery({
     queryKey: ['my-applications'],
     queryFn: applicationsService.mine,
@@ -134,9 +136,21 @@ export default function CandidateDashboardPage() {
                     <Clock size={14} className="mr-1 inline" />
                     Applied {formatDate(app.created_at)}
                   </div>
-                  <Button variant="outline" size="sm" onClick={() => setDetail(app)}>
-                    View Details
-                  </Button>
+                  <div className="flex gap-2">
+                    <Button variant="outline" size="sm" onClick={() => setDetail(app)}>
+                      View Details
+                    </Button>
+                    {app.stage !== 'hired' && app.stage !== 'rejected' && (
+                      <Button
+                        size="sm"
+                        disabled={prepare.isPending}
+                        onClick={() => prepare.mutate({ job_id: app.job.id })}
+                      >
+                        <Play size={13} />
+                        {prepare.isPending && prepare.variables?.job_id === app.job.id ? 'Preparing…' : 'Prepare'}
+                      </Button>
+                    )}
+                  </div>
                 </div>
               </div>
             )
