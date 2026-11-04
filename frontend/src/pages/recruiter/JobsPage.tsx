@@ -1,10 +1,11 @@
 import { useMemo, useState } from 'react'
+import { Link } from 'react-router-dom'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { z } from 'zod'
 import { toast } from 'sonner'
-import { Briefcase, Clock, GraduationCap, MapPin, Pencil, Plus, Search, Wallet } from 'lucide-react'
+import { BarChart3, Briefcase, Clock, GraduationCap, MapPin, Pencil, Plus, Search, Users, Wallet } from 'lucide-react'
 import { Badge } from '../../components/ui/badge'
 import { Button } from '../../components/ui/button'
 import { Card, CardContent } from '../../components/ui/card'
@@ -213,7 +214,20 @@ export default function RecruiterJobsPage() {
                   </div>
 
                   <div className="mt-4 flex flex-wrap items-center gap-3 border-t border-gray-100 pt-4">
+                    <span className="flex items-center gap-1.5 text-sm font-medium text-gray-900">
+                      <Users size={16} className="text-gray-400" />
+                      {job.applicant_count} applicant{job.applicant_count !== 1 ? 's' : ''}
+                    </span>
                     <span className="mr-auto text-sm text-gray-500">Posted {formatDate(job.created_at)}</span>
+                    <Button asChild variant="outline" size="sm" className="text-primary border-primary hover:bg-blue-50">
+                      <Link to={`/recruiter/jobs/${job.id}/ats`}>
+                        <BarChart3 size={15} />
+                        ATS Screening
+                      </Link>
+                    </Button>
+                    <Button asChild variant="outline" size="sm">
+                      <Link to={`/recruiter/pipeline?job=${job.id}`}>Pipeline</Link>
+                    </Button>
                     <Button variant="outline" size="sm" onClick={() => openDialog(job)}>
                       <Pencil size={15} />
                       Edit
@@ -266,6 +280,8 @@ export default function RecruiterJobsPage() {
               job={dialog.job}
               onSaved={(job) => {
                 queryClient.setQueryData<Job[]>(QUERY_KEY, (current) => upsertJob(current, job))
+                // Requirement changes re-score this job's applicants.
+                queryClient.invalidateQueries({ queryKey: ['applications', job.id] })
                 toast.success(dialog.job ? 'Job updated' : job.status === 'active' ? 'Job published' : 'Draft saved')
                 setDialog({ open: false, job: null })
               }}

@@ -21,6 +21,8 @@ export const router = createBrowserRouter([
         children: [
           { index: true, lazy: page(() => import('./pages/recruiter/DashboardPage')) },
           { path: 'jobs', lazy: page(() => import('./pages/recruiter/JobsPage')) },
+          { path: 'jobs/:jobId/ats', lazy: page(() => import('./pages/recruiter/AtsScreeningPage')) },
+          { path: 'applications/:id', lazy: page(() => import('./pages/recruiter/ApplicationPage')) },
           { path: 'pipeline', lazy: page(() => import('./pages/recruiter/PipelinePage')) },
           { path: 'settings', lazy: page(() => import('./pages/recruiter/SettingsPage')) },
         ],

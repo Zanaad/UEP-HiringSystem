@@ -1,4 +1,5 @@
 import { api } from './api'
+import type { AtsResult } from './applications.service'
 
 export type EmploymentType = 'full-time' | 'part-time' | 'contract' | 'internship'
 export type EducationLevel = 'any' | 'high-school' | 'bachelor' | 'master' | 'phd'
@@ -19,14 +20,20 @@ export interface Job {
   status: JobStatus
   created_at: string
   updated_at: string
+  applicant_count: number
 }
 
-export type JobPayload = Omit<Job, 'id' | 'company_name' | 'status' | 'created_at' | 'updated_at'> & {
+export interface JobSearchItem extends Job {
+  match: AtsResult | null
+  applied: boolean
+}
+
+export type JobPayload = Omit<Job, 'id' | 'company_name' | 'status' | 'created_at' | 'updated_at' | 'applicant_count'> & {
   status?: JobStatus
 }
 
 export interface JobPage {
-  items: Job[]
+  items: JobSearchItem[]
   total: number
   page: number
   page_size: number
