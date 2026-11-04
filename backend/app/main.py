@@ -1,8 +1,12 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 
+from app.exceptions import ConflictError, NotFoundError
+from app.routes.application_routes import router as application_router
 from app.routes.auth_routes import router as auth_router
 from app.routes.job_routes import router as job_router
+from app.routes.profile_routes import router as profile_router
 from app.routes.user_routes import router as user_router
 
 app = FastAPI(title="UEP Hiring System API")
@@ -20,9 +24,22 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+
+@app.exception_handler(NotFoundError)
+def not_found_handler(_: Request, exc: NotFoundError) -> JSONResponse:
+    return JSONResponse(status_code=404, content={"detail": str(exc)})
+
+
+@app.exception_handler(ConflictError)
+def conflict_handler(_: Request, exc: ConflictError) -> JSONResponse:
+    return JSONResponse(status_code=409, content={"detail": str(exc)})
+
+
 app.include_router(auth_router)
 app.include_router(user_router)
 app.include_router(job_router)
+app.include_router(profile_router)
+app.include_router(application_router)
 
 
 @app.get("/")

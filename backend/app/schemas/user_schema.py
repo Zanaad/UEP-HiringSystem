@@ -39,7 +39,6 @@ class UserCreate(BaseModel):
             raise ValueError("Password must include at least one special character")
         return value
 
-
     @model_validator(mode="after")
     def validate_company(self) -> "UserCreate":
         if self.role == "candidate":

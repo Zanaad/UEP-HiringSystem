@@ -60,3 +60,11 @@ class JobRepository:
             .options(contains_eager(Job.company))
             .where(Job.id == job_id, Job.company_id == company_id)
         )
+
+    def get_active(self, job_id: int) -> Job | None:
+        return self.db.scalar(
+            select(Job)
+            .join(Job.company)
+            .options(contains_eager(Job.company))
+            .where(Job.id == job_id, Job.status == "active")
+        )

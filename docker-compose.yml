@@ -32,8 +32,11 @@ services:
       DEBUG: ${DEBUG}
       DATABASE_URL: ${DATABASE_URL}
       SECRET_KEY: ${SECRET_KEY:?SECRET_KEY must be set in .env}
+      UPLOAD_DIR: /app/uploads
     ports:
       - "8001:8000"
+    volumes:
+      - uploads:/app/uploads
 
   frontend:
     image: zanaad/uep-hiringsystem-frontend:latest
@@ -50,3 +53,4 @@ services:
 
 volumes:
   db_data:
+  uploads:

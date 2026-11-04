@@ -66,6 +66,17 @@ class JobUpdate(BaseModel):
         return self
 
 
+class AtsResult(BaseModel):
+    overall: int
+    verdict: Literal["strong", "good", "fair", "weak"]
+    skills_score: int
+    experience_score: int
+    education_score: int
+    location_score: int
+    matched: list[str]
+    missing: list[str]
+
+
 class JobRead(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
@@ -83,10 +94,16 @@ class JobRead(BaseModel):
     status: JobStatus
     created_at: datetime
     updated_at: datetime
+    applicant_count: int = 0
+
+
+class JobSearchItem(JobRead):
+    match: AtsResult | None = None
+    applied: bool = False
 
 
 class JobPage(BaseModel):
-    items: list[JobRead]
+    items: list[JobSearchItem]
     total: int
     page: int
     page_size: int

@@ -12,6 +12,7 @@ from app.repositories.user_repository import UserRepository
 from app.services.auth_utils import decode_access_token
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/login")
+optional_oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/login", auto_error=False)
 
 
 def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)) -> User:
@@ -35,6 +36,17 @@ def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(
         raise credentials_exception
 
     return user
+
+
+def get_optional_user(
+    token: str | None = Depends(optional_oauth2_scheme), db: Session = Depends(get_db)
+) -> User | None:
+    if not token:
+        return None
+    try:
+        return UserRepository(db).get_by_id(int(decode_access_token(token)["sub"]))
+    except (PyJWTError, KeyError, ValueError, TypeError):
+        return None
 
 
 def require_roles(*roles: str) -> Callable[..., Any]:

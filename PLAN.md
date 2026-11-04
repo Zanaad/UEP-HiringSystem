@@ -100,11 +100,11 @@ users                      (exists) id, name, email, password_hash, role, create
 companies                  (exists) id, name, created_at
                            + website, industry, size, location    -- phase 5 settings
 
-candidate_profiles         user_id PK/FK, headline, phone, location,
+candidate_profiles         (exists) user_id PK/FK, headline, phone, location,
                            linkedin_url, github_url, portfolio_url,
                            skills JSON, experience_years INT,
                            education_level ENUM(high-school,bachelor,master,phd),
-                           resume_path, resume_original_name
+                           resume_path, resume_filename, updated_at
 
 jobs                       (exists) id, company_id FK, created_by FK users,
                            title, department, location, employment_type
@@ -114,16 +114,16 @@ jobs                       (exists) id, company_id FK, created_by FK users,
                            education_level, status ENUM(draft,active,closed),
                            created_at, updated_at
 
-applications               id, job_id FK, candidate_id FK,
+applications               (exists) id, job_id FK, candidate_id FK,
                            stage ENUM(applied,screening,interview,technical,offer,hired,rejected),
-                           ats_score INT NULL, cover_note TEXT,
+                           ats_score INT, ats JSON (full breakdown), cover_note TEXT,
                            created_at, updated_at
                            UNIQUE(job_id, candidate_id)
 
-application_events         id, application_id FK, from_stage, to_stage,
+application_events         (exists) id, application_id FK, from_stage, to_stage,
                            changed_by FK users, created_at        -- timeline
 
-application_notes          id, application_id FK, author_id FK, body, created_at
+application_notes          (exists) id, application_id FK, author_id FK, body, created_at
 
 scheduled_interviews       id, application_id FK, type ENUM(phone,video,onsite,technical),
                            scheduled_at DATETIME, interviewer_name, notes,
@@ -154,8 +154,8 @@ All endpoints except auth and the public job listing need a JWT. `R` means recru
 | POST | `/auth/register`, `/auth/login` | public (exists) |
 | GET | `/auth/me` | any (exists) |
 | POST | `/auth/change-password` | any |
-| GET/PUT | `/me/profile` | any (returns the candidate or recruiter profile) |
-| POST | `/me/resume` | C (multipart upload, PDF/DOCX, max 5 MB) |
+| GET/PUT | `/me/profile` | C (candidate profile; saving re-scores the candidate's applications) |
+| PUT/GET | `/me/resume` | C (upload: PDF/DOCX, max 5 MB, checked by file signature; download own file) |
 | GET/PUT | `/me/company` | R |
 
 ### Jobs
@@ -169,14 +169,15 @@ All endpoints except auth and the public job listing need a JWT. `R` means recru
 ### Applications and pipeline
 | Method | Path | Who |
 |---|---|---|
-| POST | `/applications` `{job_id, cover_note}` | C (rejects duplicates and inactive jobs) |
-| GET | `/applications/mine` | C |
-| GET | `/applications?job_id=&stage=` | R (own jobs only) |
-| GET | `/applications/{id}` | R or the owning candidate |
+| POST | `/applications` `{job_id, cover_note}` | C (active jobs only, otherwise 404; duplicates get 409) |
+| GET | `/applications/mine` | C (with job and stage history; never includes notes) |
+| GET | `/applications?job_id=` | R (own company's jobs only; ranked by ATS score; used by both the pipeline and the ATS screening page) |
+| GET | `/applications/{id}` | R (profile, ATS breakdown, timeline, notes) |
 | PATCH | `/applications/{id}/status` `{stage}` | R (writes an `application_events` row) |
-| GET/POST | `/applications/{id}/notes` | R |
-| GET | `/jobs/{id}/ats` | R (applicants ranked by ATS score with a per-factor breakdown) |
-| GET | `/jobs/{id}/match` | C (the candidate's own match score for a job) |
+| POST | `/applications/{id}/notes` | R |
+| GET | `/applications/{id}/resume` | R (only for applications to the recruiter's own company) |
+
+When a signed-in candidate calls `GET /jobs`, each result also includes their `match` and whether they have `applied`. This replaces the planned `/jobs/{id}/match` and `/jobs/{id}/ats` endpoints.
 
 ### Mock interviews
 | Method | Path | Who |
@@ -283,14 +284,15 @@ Each phase ends in something that can be demoed and merged as its own PR.
 - [x] Frontend: port `JobSearch.tsx` with server-side search (debounced), a type filter and pagination. Apply, ATS match and applicant counts arrive in Phase 3.
 
 ### Phase 3: Applications and pipeline (3–4 days)
-- [ ] Backend: `candidate_profiles`, `applications`, `application_events` and `application_notes`
-- [ ] `ats_service.py` with unit tests
-- [ ] Endpoints: apply, my applications, list by job, change stage, notes, ATS ranking, my match
-- [ ] Resume upload: check the content type and size, use a random stored filename, and serve the file only to the owner and to recruiters with an application to their job
-- [ ] Frontend: the apply dialog in `JobSearch` and the candidate's match score
-- [ ] Frontend: port `CandidatePipeline.tsx`. On drag and drop, send `PATCH /applications/{id}/status` with an optimistic update and roll back on error.
-- [ ] Frontend: port `CandidateProfile.tsx` (overview, ATS breakdown, notes, timeline) and `ATSScreening.tsx`
-- [ ] Frontend: port `CandidateDashboard.tsx` (my applications and their stages)
+- [x] Backend: `candidate_profiles`, `applications`, `application_events` and `application_notes` (migration `0005`)
+- [x] `ats_service.py` with unit tests. The full breakdown is stored on each application and recalculated when the candidate's profile or the job's requirements change.
+- [x] Endpoints: apply, my applications, list by job, change stage, notes, résumé download, and match and applied flags in job search
+- [x] Résumé upload: size limit, PDF/DOCX file-signature check, random stored filename, separate `uploads` Docker volume, served only to the owner and to recruiters at the company that received the application
+- [x] Candidate profile form and résumé upload in candidate Settings (needed for ATS; the rest of Settings comes in Phase 5)
+- [x] Frontend: the apply dialog in Find Jobs, with the candidate's match score and matched/missing skills
+- [x] Frontend: port `CandidatePipeline.tsx` with native drag and drop and a "Move to" dropdown (no `react-dnd`); optimistic updates roll back on error
+- [x] Frontend: candidate page `/recruiter/applications/:id` (profile, ATS breakdown, stage, notes, timeline, résumé) and `ATSScreening.tsx`
+- [x] Frontend: port `CandidateDashboard.tsx` (stats, my applications with progress, detail dialog with activity)
 
 ### Phase 4: AI mock interviews (3–4 days)
 - [ ] `backend/app/ai/`: provider protocol, `GeminiProvider`, `FakeProvider`, prompts and Pydantic output schemas
